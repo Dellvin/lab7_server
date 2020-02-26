@@ -4,6 +4,8 @@
 #define INCLUDE_HEADER_HPP_
 
 #include <iostream>
+#include <string>
+#include <vector>
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 #include <chrono>
@@ -21,7 +23,7 @@
 #define BOOST_ASIO_SEPARATE_COMPILATION
 namespace logging = boost::log;
 namespace keywords = boost::log::keywords;
-using namespace boost::asio;
+using boost::asio;
 using boost::posix_time::ptime;
 using std::cout;
 using std::endl;
@@ -74,16 +76,13 @@ public:
     void messageHandler() {
         if (!fork()) {
             while (true) {
-                enum {
-                    max_length = 1024
-                };
+                max_length = 1024;
                 char data[max_length];
                 memset(data, '\0', max_length);
                 try {
                     alarm(5);
                     socket->read_some(buffer(data));
                     BOOST_LOG_TRIVIAL(info) << login << ": " << data << endl;
-
                 } catch (...) {
                     BOOST_LOG_TRIVIAL(info) << login
                     << ": " << "Client was disconected" << endl;
@@ -160,23 +159,20 @@ public:
                 (
                         keywords::file_name = "info.log",
                         keywords::format =
-                        "[%TimeStamp%] [%ThreadID%] [%Severity%] %Message%"
-                );
-
+                        "[%TimeStamp%] [%ThreadID%] [%Severity%] %Message%");
         logging::add_console_log(
                 std::cout,
                 keywords::format =
-                "[%TimeStamp%] [%ThreadID%] [%Severity%] %Message%"
-        );
-
+                "[%TimeStamp%] [%ThreadID%] [%Severity%] %Message%");
         logging::add_common_attributes();
-
     }
 
     std::string login;
     socket_ptr socket;
     sig_atomic_t timeout = 0;
+    
 private:
+
     ptime lastPingTime;
 };
 
@@ -189,7 +185,8 @@ void funcForClientInterection(socket_ptr sock) {
 
 void acceptor() {
     io_service service;
-    ip::tcp::endpoint ep(ip::address::from_string("127.0.0.1"), 1024); // before this number port does not works
+    ip::tcp::endpoint ep(ip::address::from_string("127.0.0.1"), 1024);
+    // before this number port does not works
     ip::tcp::acceptor acc(service, ep);
     std::cout << "I am ready" << std::endl;
     while (true) {
