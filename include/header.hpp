@@ -172,7 +172,7 @@ public:
         logging::add_common_attributes();
 
     }
-    
+
     std::string login;
     socket_ptr socket;
     sig_atomic_t timeout = 0;
