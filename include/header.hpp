@@ -76,8 +76,7 @@ public:
     void messageHandler() {
         if (!fork()) {
             while (true) {
-                max_length = 1024;
-                char data[max_length];
+                char data[1024];
                 memset(data, '\0', max_length);
                 try {
                     alarm(5);
@@ -170,9 +169,6 @@ public:
     std::string login;
     socket_ptr socket;
     sig_atomic_t timeout = 0;
-    
-private:
-
     ptime lastPingTime;
 };
 
