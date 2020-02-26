@@ -12,6 +12,7 @@
 #include <thread>
 #include <signal.h>
 #include <csignal>
+#include <sys/wait.h>
 #include <boost/log/trivial.hpp>
 #include <boost/log/utility/setup/file.hpp>
 #include <boost/log/sources/severity_feature.hpp>
@@ -134,7 +135,7 @@ public:
 
     bool checkMessage(char *mes) {
         std::string m = mes;
-        if (m.find('\n') != -1) {
+        if (m.find('\n') != 0) {
             uint64_t pos = m.find("\n");
             for (uint64_t i = pos; i < m.size(); i++) {
                 m.at(i) = '\0';
@@ -188,7 +189,7 @@ void acceptor() {
     boost::asio::ip::tcp::acceptor acc(service, ep);
     std::cout << "I am ready" << std::endl;
     while (true) {
-        socket_ptr sock(new ip::tcp::socket(service));
+        socket_ptr sock(new boost::asio::ip::tcp::socket(service));
         acc.accept(*sock);
         std::thread workWithClient(funcForClientInterection, sock);
         workWithClient.join();
