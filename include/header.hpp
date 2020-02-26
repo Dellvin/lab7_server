@@ -11,6 +11,7 @@
 #include <chrono>
 #include <thread>
 #include <signal.h>
+#include <csignal>
 #include <boost/log/trivial.hpp>
 #include <boost/log/utility/setup/file.hpp>
 #include <boost/log/sources/severity_feature.hpp>
@@ -23,12 +24,12 @@
 #define BOOST_ASIO_SEPARATE_COMPILATION
 namespace logging = boost::log;
 namespace keywords = boost::log::keywords;
-using boost::asio;
+
 using boost::posix_time::ptime;
 using std::cout;
 using std::endl;
 
-typedef boost::shared_ptr <ip::tcp::socket> socket_ptr;
+typedef boost::shared_ptr <boost::asio::ip::tcp::socket> socket_ptr;
 ptime lastActiveTime;
 
 class clientInterection;
@@ -52,7 +53,7 @@ public:
         messageHandler();
         BOOST_LOG_TRIVIAL(info)
         << "Time out is over\nClient has been disconnected" << endl;
-        socket->write_some(buffer("bye\n"));
+        socket->write_some(boost::asio::buffer("bye\n"));
         socket->close();
     }
 
@@ -61,13 +62,13 @@ public:
         do {
             char log[32];
             memset(log, '\0', 32);
-            socket->read_some(buffer(log));
+            socket->read_some(boost::asio::buffer(log));
             if (!checkMessage(log)) {
-                socket->write_some(buffer("login_not_ok\n"));
+                socket->write_some(boost::asio::buffer("login_not_ok\n"));
                 loginFlag = false;
             } else {
                 login = log;
-                socket->write_some(buffer("login_ok\n"));
+                socket->write_some(boost::asio::buffer("login_ok\n"));
                 loginFlag = true;
             }
         } while (!loginFlag);
@@ -77,10 +78,10 @@ public:
         if (!fork()) {
             while (true) {
                 char data[1024];
-                memset(data, '\0', max_length);
+                memset(data, '\0', 1024);
                 try {
                     alarm(5);
-                    socket->read_some(buffer(data));
+                    socket->read_some(boost::asio::buffer(data));
                     BOOST_LOG_TRIVIAL(info) << login << ": " << data << endl;
                 } catch (...) {
                     BOOST_LOG_TRIVIAL(info) << login
@@ -90,7 +91,7 @@ public:
                 if (!checkMessage(data)) {
                     BOOST_LOG_TRIVIAL(info)
                     << login << ": " << "error message" << endl;
-                    socket->write_some(buffer("error message\n"));
+                    socket->write_some(boost::asio::buffer("error message\n"));
                     continue;
                 }
                 switch (messageIdentification(data)) {
@@ -112,28 +113,28 @@ public:
     void undefindCommand() {
         BOOST_LOG_TRIVIAL(info)
         << login << ": " << "Undefind command" << endl;
-        socket->write_some(buffer("Undefind command\n"));
+        socket->write_some(boost::asio::buffer("Undefind command\n"));
     }
 
     void answerOnPing() {
         BOOST_LOG_TRIVIAL(info) << login << ": " << "ping_ok" << endl;
-        socket->write_some(buffer("ping_ok\n"));
+        socket->write_some(boost::asio::buffer("ping_ok\n"));
     }
 
     void sendClientList() {
         std::string clientsList;
-        for (int i = 0; i < users.size(); i++) {
+        for (uint64_t i = 0; i < users.size(); i++) {
             clientsList.append(users.at(i).login);
         }
         clientsList.append(login);
         BOOST_LOG_TRIVIAL(info)
         << "clients: " << std::endl << clientsList << endl;
-        socket->write_some(buffer(clientsList));
+        socket->write_some(boost::asio::buffer(clientsList));
     }
 
     bool checkMessage(char *mes) {
         std::string m = mes;
-        if (m.find("\n") != -1) {
+        if (m.find('\n') != -1) {
             uint64_t pos = m.find("\n");
             for (uint64_t i = pos; i < m.size(); i++) {
                 m.at(i) = '\0';
@@ -180,10 +181,11 @@ void funcForClientInterection(socket_ptr sock) {
 }
 
 void acceptor() {
-    io_service service;
-    ip::tcp::endpoint ep(ip::address::from_string("127.0.0.1"), 1024);
+    boost::asio::io_service service;
+    boost::asio::ip::tcp::endpoint
+    ep(boost::asio::ip::address::from_string("127.0.0.1"), 1024);
     // before this number port does not works
-    ip::tcp::acceptor acc(service, ep);
+    boost::asio::ip::tcp::acceptor acc(service, ep);
     std::cout << "I am ready" << std::endl;
     while (true) {
         socket_ptr sock(new ip::tcp::socket(service));
